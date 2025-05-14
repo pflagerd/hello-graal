@@ -1,11 +1,19 @@
 #!/bin/bash
-if ! (which python3 >/dev/null && python3 --version | grep ' 3.' >/dev/null); then
-  echo "You must have python 3 installed to run this."
-  exit 1
-fi
-
 pushd $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) >/dev/null
 
-python3 $(dirname "$(readlink -f "$0")")/setmeup.py
+output=$(wget -N https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-24.0.1/graalvm-community-jdk-24.0.1_linux-x64_bin.tar.gz 2>&1) || ( echo $output && exit 1 )
+
+[[ "graalvm-community-jdk-24.0.1_linux-x64_bin.tar.gz" -nt "graalvm-community-openjdk-24.0.1+9.1" ]] && tar xvfm graalvm-community-jdk-24.0.1_linux-x64_bin.tar.gz
+export JAVA_HOME=$(realpath graalvm-community-openjdk-24.0.1+9.1)
+echo "$PATH" | grep -q "$JAVA_HOME/bin" || export PATH="$(realpath $JAVA_HOME)/bin:$PATH"
+
+output=$(wget -N https://services.gradle.org/distributions/gradle-8.7-bin.zip 2>&1) || ( echo $output && exit 1 )
+[[ "gradle-8.7-bin.zip" -nt "gradle-8.7" ]] && (unzip gradle-8.7-bin.zip; touch gradle-8.7)
+export GRADLE_HOME=$(realpath gradle-8.7)
+export GRADLE_OPTS="--enable-native-access=ALL-UNNAMED"
+
+echo "$PATH" | grep -q "$GRADLE_HOME/bin" || export PATH="$(realpath $GRADLE_HOME/bin):$PATH"
+
+gradle -version
 
 popd >/dev/null
